@@ -17,9 +17,10 @@ for file in filelist_input:
     with open(os.path.join(os.path.dirname(__file__), "input_data", file), "r") as f:
         # number of potential clients
         clients_count = int(f.readline().strip())
-        # collect all clients' data
+        # create a DataFrame holding the clients' preferences
         clients_data = pd.DataFrame(columns=['client_ID', 'ingredient', 'like', 'dislike'])
 
+        # collect all clients' preferences
         for client in range(clients_count):
             likes = f.readline().strip()
             likes = likes.split()
@@ -48,7 +49,7 @@ for file in filelist_input:
         for ingredient in ingredients_selected['ingredient']:
             indizes_to_drop = clients_selected[(clients_selected['ingredient'] == ingredient) & (clients_selected['dislike'] == 1)]['client_ID']
             clients_selected = clients_selected[~clients_selected['client_ID'].isin(indizes_to_drop)]
-            # get every client who likes at least one of the not selected ingredients and exclude them from the selected clients
+        # get every client who likes at least one of the not selected ingredients and exclude them from the selected clients
         for ingredient in ingredients_notselected['ingredient']:
             indizes_to_drop = clients_selected[(clients_selected['ingredient'] == ingredient) & (clients_selected['like'] == 1)]['client_ID']
             clients_selected = clients_selected[~clients_selected['client_ID'].isin(indizes_to_drop)]
