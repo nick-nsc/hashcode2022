@@ -9,7 +9,10 @@ filelist_input = [
     "e_elaborate.in.txt",
     ]
 
+counter = 0
+
 for file in filelist_input:
+    counter += 1
     with open(os.path.join(os.path.dirname(__file__), "input_data", file), "r") as f:
         # number of potential clients
         clients_count = int(f.readline().strip())
@@ -38,11 +41,13 @@ for file in filelist_input:
         ingredients_selection_count = len(ingredients_selection)
 
         # create output file
-        with open(os.path.join(os.path.dirname(__file__), "output", file), "w") as f:
+        with open(os.path.join(os.path.dirname(__file__), "output", file.replace("in.txt", "out.txt")), "w") as f:
             solution = str(ingredients_selection_count)
             for i in ingredients_selection['ingredient']:
                 solution += " "
                 solution += i
             f.write(solution)
+
+    print("{} of {} finished.".format(counter, len(filelist_input)))
 
 print("DONE")
