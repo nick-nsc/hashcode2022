@@ -3,6 +3,7 @@
 #include <string>
 #include <array>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 using namespace std;
@@ -23,12 +24,11 @@ void solve(const string& filename) {
     }
 
     // prepare data containers
-    map<string, map<string, int>> contributors;
     typedef struct {
         int days, score, bestbefore;
         vector<pair<string, int>> roles;
     } project;
-    
+    map<string, unordered_map<string, int>> contributors;
     map<string, project> projects;
 
     // get cont and proj count
@@ -36,12 +36,23 @@ void solve(const string& filename) {
     input >> cont_count >> proj_count; // input knows that those are ints, so it reads them as such.
 
     // get contributor data
-    for (int i = 1; i <= cont_count; ++i) {
-        // cout << "contributor " << i << "\n";
+    for(int i = 0; i < cont_count; ++i) {
+        string cont_name;
+        int skill_count;
+        input >> cont_name >> skill_count;
+
+        unordered_map<string, int> skills;
+        for(int i = 0; i < skill_count; i++) {
+            string skill_name;
+            int skill_level;
+            input >> skill_name >> skill_level;
+            skills.insert({skill_name, skill_level});
+        }
+        contributors.insert({cont_name, skills});
     }
 
     // get project data
-    for (int i = 1; i <= proj_count; ++i) {
+    for(int i = 1; i <= proj_count; ++i) {
         // cout << "project " << i << "\n";
     }
 
@@ -61,7 +72,7 @@ int main(int, char**) {
         "f_find_great_mentors.in.txt"
     };
         
-    for (int i = 0; i < 6; i++) {
+    for(int i = 0; i < 6; i++) {
         solve(filenames.at(i));
     }
         
