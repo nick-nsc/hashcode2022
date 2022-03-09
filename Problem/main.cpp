@@ -12,7 +12,7 @@ void solve(const string& filename) {
     cout << "Processing: " << filename << "\n";
     const string outfilename = "solution." + filename;
 
-    // set up streams
+    // set up file streams
     ifstream input;
     ofstream output;
     input.open(".\\..\\input_data\\"+filename, ios::in);
@@ -33,7 +33,7 @@ void solve(const string& filename) {
 
     // get cont and proj count
     int cont_count = 0, proj_count = 0;   
-    input >> cont_count >> proj_count; // cin knows that those are ints, so it reads them as such.
+    input >> cont_count >> proj_count; // input knows that those are ints, so it reads them as such.
 
     // get contributor data
     for (int i = 1; i <= cont_count; ++i) {
@@ -44,6 +44,8 @@ void solve(const string& filename) {
     for (int i = 1; i <= proj_count; ++i) {
         // cout << "project " << i << "\n";
     }
+
+    // queue and "process" projects
 
     input.close();
     output.close();
