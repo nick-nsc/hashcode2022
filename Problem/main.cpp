@@ -27,9 +27,9 @@ void solve(const string& filename) {
     typedef struct {
         int days, score, bestbefore;
         vector<pair<string, int>> roles;
-    } project;
+    } Project;
     map<string, unordered_map<string, int>> contributors;
-    map<string, project> projects;
+    map<string, Project> projects;
 
     // get cont and proj count
     int cont_count = 0, proj_count = 0;   
@@ -40,7 +40,6 @@ void solve(const string& filename) {
         string cont_name;
         int skill_count;
         input >> cont_name >> skill_count;
-
         unordered_map<string, int> skills;
         for(int i = 0; i < skill_count; i++) {
             string skill_name;
@@ -53,7 +52,18 @@ void solve(const string& filename) {
 
     // get project data
     for(int i = 1; i <= proj_count; ++i) {
-        // cout << "project " << i << "\n";
+        string proj_name;
+        int proj_days, proj_score, proj_bb, role_count;
+        input >> proj_name >> proj_days >> proj_score >> proj_bb >> role_count;
+        vector<pair<string, int>> roles;
+        for(int i = 0; i < role_count; ++i) {
+            string role_name;
+            int role_level;
+            input >> role_name >> role_level;
+            roles.push_back({role_name, role_level});
+        }
+        Project tmp{proj_days, proj_score, proj_bb, roles};
+        projects.insert({proj_name, tmp});
     }
 
     // queue and "process" projects
