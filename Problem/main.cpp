@@ -5,6 +5,7 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -51,7 +52,7 @@ void solve(const string& filename) {
     }
 
     // get project data
-    for(int i = 1; i <= proj_count; ++i) {
+    for(int i = 0; i < proj_count; ++i) {
         string proj_name;
         int proj_days, proj_score, proj_bb, role_count;
         input >> proj_name >> proj_days >> proj_score >> proj_bb >> role_count;
@@ -65,6 +66,15 @@ void solve(const string& filename) {
         Project tmp{proj_days, proj_score, proj_bb, roles};
         projects.insert({proj_name, tmp});
     }
+
+    // sort projects by (bestbefore - days) in a vector
+    vector<pair<int, string>> projects_ordered;
+    for(auto i: projects) {
+        projects_ordered.push_back(make_pair((i.second.bestbefore-i.second.days), i.first));
+    }
+    sort(projects_ordered.begin(), projects_ordered.end(), [](auto a, auto b) {
+        return a.first < b.first;
+    });
 
     // queue and "process" projects
 
