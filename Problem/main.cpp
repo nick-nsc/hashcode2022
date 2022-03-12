@@ -9,6 +9,18 @@
 
 using namespace std;
 
+const bool is_wip(const vector<tuple<int, string, int>>& v) {
+    bool wip = false;
+    for(auto& p : v) {
+        const int status = get<2>(p);
+        if (status==1) {
+            wip = true;
+            break;
+        }
+    }
+    return wip;
+}
+
 void solve(const string& filename) {
     // prepare in- and out-files
     cout << "Processing: " << filename << "\n";
@@ -68,15 +80,160 @@ void solve(const string& filename) {
     }
 
     // sort projects by (bestbefore - days) in a vector
-    vector<pair<int, string>> projects_ordered;
-    for(auto i: projects) {
-        projects_ordered.push_back(make_pair((i.second.bestbefore-i.second.days), i.first));
+    vector<tuple<int, string, int>> projects_ordered;   // urgency, name, status
+    for(auto& i : projects) {
+        projects_ordered.push_back(make_tuple((i.second.bestbefore-i.second.days), i.first, 0));
     }
     sort(projects_ordered.begin(), projects_ordered.end(), [](auto a, auto b) {
-        return a.first < b.first;
+        return get<0>(a) < get<0>(b);
     });
 
+    // get contributors by availability in a vector
+    vector<pair<string, int>> contributors_ordered;    // name, available
+    for(auto& i : contributors) {
+        contributors_ordered.push_back({i.first, -1});
+    }
+
     // queue and "process" projects
+    int day = 0;
+    vector<pair<string, vector<string>>> solution;
+    bool occ_has_changed_yesterday = true;
+    while(is_wip(projects_ordered) || day == 0)
+    {
+        bool occ_has_changed_today = false;
+        bool project_has_finished = false;
+
+        // get WIP projects, update days and determine if any finishes -> update status then
+        for (auto& p : projects_ordered) {
+            int& status = get<2>(p);
+            if(status == 0) {
+                continue;
+            }
+            else if(status == 2) {
+                continue;
+            }
+            else if(status == 1) {
+                // update days
+                projects.at(get<1>(p)).days -= 1;
+                // update status
+                if(projects.at(get<1>(p)).days <= 0) {
+                    if(projects.at(get<1>(p)).days < 0) {
+                        cout << "Math wrong" << "\n";
+                    }
+                    status = 2;
+                    project_has_finished = true;
+                }
+                continue;
+            }
+            else {
+                cout << "Status error" << "\n";
+            }
+        }
+
+        
+
+        // try to queue unfinished projects
+        for (auto& p : projects_ordered) {
+            // skip projects which are WIP
+            if(get<2>(p) == 1) {
+                continue;
+            }
+
+            // skip projects which are finished
+            if(get<2>(p) == 2) {
+                continue;
+            }
+
+            if ((!occ_has_changed_yesterday) && (!project_has_finished)) {
+                continue;
+            }
+            // get roles for this project
+            vector<pair<string, int>> p_roles;
+            p_roles = projects.at(get<1>(p)).roles;
+
+            // check if available contributors can cover the required roles
+            bool not_found;
+            vector<string> chosen_contr;
+            for(auto& r : p_roles) {
+                not_found = true;
+                // get available contributors for this role
+                vector<pair<string, bool>> avail_contr;
+                for(auto& c : contributors_ordered) {
+                    if(c.second<day) {
+                        avail_contr.push_back(c);
+                    }
+                }
+                // filter available contributors by needed skill and level
+                for(vector<pair<string, bool>>::iterator it = avail_contr.begin(); it!=avail_contr.end();) {
+                    int contr_role_level = -1;
+                    try {
+                        auto x = contributors.at(it->first);
+                        contr_role_level = x.at(r.first);
+                    }
+                    catch(const std::exception& e) {
+                    }
+                    if(!(contr_role_level==-1 || contr_role_level<r.second)) {
+                        // save first best fitting contributor to chosen_contr and set available=false
+                        for(auto& c : contributors_ordered) {
+                            if(c.first == it->first) {
+                                c.second = day + projects.at(get<1>(p)).days - 1;
+                                not_found = false;
+                                chosen_contr.push_back(it->first);
+                                break;
+                            }
+                        }
+                    }
+                    if(!not_found) {
+                        break;
+                    }
+                    ++it;
+                }
+
+                if(not_found) {
+                    break;
+                }
+            }
+            if(not_found) {
+                // update chosen contributor's availability if not every role is fulfilled
+                for(auto& cc : chosen_contr) {
+                    for(auto& c : contributors_ordered) {
+                        if(c.first == cc) {
+                            c.second = day - 1;
+                        }
+                    }
+                }
+                continue;
+            }
+
+            // set project to WIP
+            get<2>(p) = 1;
+            // add chosen_contr to solution
+            solution.push_back(make_pair(get<1>(p), chosen_contr));
+            // update changes
+            occ_has_changed_today = true;
+        }
+        if(occ_has_changed_today) {
+            occ_has_changed_yesterday = true;
+        }            
+        else{
+            occ_has_changed_yesterday = false;
+        }
+        if(day%200==0) {
+            cout << day << "\n";
+        }
+        ++day;
+    }
+
+    // push solution to outfile
+    output << solution.size() << "\n";
+    for(auto& s : solution) {
+        output << s.first << "\n";
+        string contrs = "";
+        for(auto& c : s.second) {
+            contrs = contrs + c + " ";
+        }
+        output << contrs << "\n";
+    }
 
     input.close();
     output.close();
