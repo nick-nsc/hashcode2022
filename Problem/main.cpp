@@ -21,6 +21,18 @@ const bool is_wip(const vector<tuple<int, string, int>>& v) {
     return wip;
 }
 
+void push_solution(vector<pair<string, vector<string>>>& solution, ofstream& output) {
+    output << solution.size() << "\n";
+    for(auto& s : solution) {
+        output << s.first << "\n";
+        string contrs = "";
+        for(auto& c : s.second) {
+            contrs = contrs + c + " ";
+        }
+        output << contrs << "\n";
+    }
+}
+
 void solve(const string& filename) {
     // prepare in- and out-files
     cout << "Processing: " << filename << "\n";
@@ -130,8 +142,6 @@ void solve(const string& filename) {
             }
         }
 
-        
-
         // try to queue unfinished projects
         for (auto& p : projects_ordered) {
             // skip projects which are WIP
@@ -144,9 +154,11 @@ void solve(const string& filename) {
                 continue;
             }
 
+            // skip project if contributor availability has not changed
             if ((!occ_has_changed_yesterday) && (!project_has_finished)) {
                 continue;
             }
+
             // get roles for this project
             vector<pair<string, int>> p_roles;
             p_roles = projects.at(get<1>(p)).roles;
@@ -209,7 +221,7 @@ void solve(const string& filename) {
             get<2>(p) = 1;
             // add chosen_contr to solution
             solution.push_back(make_pair(get<1>(p), chosen_contr));
-            // update changes
+            // update that changes have happened
             occ_has_changed_today = true;
         }
         if(occ_has_changed_today) {
@@ -218,6 +230,7 @@ void solve(const string& filename) {
         else{
             occ_has_changed_yesterday = false;
         }
+        
         if(day%200==0) {
             cout << day << "\n";
         }
@@ -225,15 +238,7 @@ void solve(const string& filename) {
     }
 
     // push solution to outfile
-    output << solution.size() << "\n";
-    for(auto& s : solution) {
-        output << s.first << "\n";
-        string contrs = "";
-        for(auto& c : s.second) {
-            contrs = contrs + c + " ";
-        }
-        output << contrs << "\n";
-    }
+    push_solution(solution, output);
 
     input.close();
     output.close();
