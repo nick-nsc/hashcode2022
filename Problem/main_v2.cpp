@@ -64,7 +64,7 @@ void process_projects(map<string, unordered_map<string, int>>& contributors, map
     // copy all contributors' skills into a map "skills_available"
     // also: map contributors to their availability
     map<string, map<int, vector<string>>> skills_available;     // ["skill"][level]{"contr_names"...}
-    map<string, bool> contributor_availability;                 // ["contr_name"] is_available
+    map<string, bool> contributors_availability;                 // ["contr_name"] is_available
     for(auto& contr : contributors) {
         for(auto& skill : contr.second) {
             auto search_result_skill = skills_available.find(skill.first);
@@ -90,14 +90,85 @@ void process_projects(map<string, unordered_map<string, int>>& contributors, map
                 skills_available.insert({skill.first, lvl});
             }
         }
-        contributor_availability.insert({contr.first, true});
+        contributors_availability.insert({contr.first, true});
     }
     
-    //TODO loop over projects and assign !available! contributors
-    //TODO on proj_assign_contr: update contributor_availability (also temporary on a copy when checking if every role can be assigned), update soloution
-    //TODO on contr_skill_levelup: update contributors and skills_available
+    //TODO on contr_skill_levelup: update contributors and skills_available(-> if vector of names empty then erase the level key/index AND if level-map empty then erase the skill key/index)
+    vector<tuple<string, vector<string>, int>> projects_wip;   // "name", {"contr_names"...}, ready_on_day
+    int day = 0;
 
-    cout << "stop here" << "\n";
+    do {
+        // check if projects finish today
+        for(vector<tuple<string, vector<string>, int>>::iterator it = projects_wip.begin(); it != projects_wip.end();) {
+            if(get<2>(*it)==day) {
+                // set contributors available and remove project from projects_wip
+                vector<string> contr_to_release = get<1>(*it);
+                for(auto& c : contr_to_release) {
+                    auto res = contributors_availability.find(c);
+                    if(res != contributors_availability.end()) {
+                        contributors_availability.at(c) = true;
+                    } else {
+                        cout << "ERROR: contributor not found." << "\n";
+                    }
+                }
+                it = projects_wip.erase(it);
+            } else {
+                ++it;
+            }
+        }
+
+        // try to assign contributors to projects
+        for(vector<pair<int, string>>::iterator it = projects_todo.begin(); it != projects_todo.end();) {
+            // get the project's roles
+            auto& required_roles = projects.at(it->second).roles;
+
+            // for each role: check if an available contributor can be assigned
+            bool could_not_assign;
+            vector<string> chosen_contr;
+            auto contributors_availability_tmp = contributors_availability;
+            for(auto& r : required_roles) {
+                could_not_assign = true;
+                auto search_skill = skills_available.find(r.first);
+                if(search_skill != skills_available.end()) {
+                    // skill is available
+                    auto search_level = skills_available.at(r.first).lower_bound(r.second);
+                    if(search_level != skills_available.at(r.first).end()) {
+                        // skill level is available as well
+                        for(auto& c : search_level->second) {
+                            if(contributors_availability_tmp.at(c)) {
+                                // contributor is available
+                                chosen_contr.push_back(c);
+                                contributors_availability_tmp.at(c) = false;
+                                could_not_assign = false;
+                                break;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+                if(could_not_assign) {
+                    break;
+                }
+            }
+            if(could_not_assign) {
+                ++it;
+            } else {
+                //* every project role can be assigned --> project will be worked on
+                // save new availability status of contributors
+                contributors_availability = contributors_availability_tmp;
+                // update solution
+                solution.push_back(make_pair(it->second, chosen_contr));
+                // move project to projects_wip
+                projects_wip.push_back(make_tuple(it->second, chosen_contr, day + projects.at(it->second).days));
+                it = projects_todo.erase(it);
+            }            
+        }
+
+        ++day;
+    } while (!projects_wip.empty());
 }
 
 void push_solution(vector<pair<string, vector<string>>>& solution, ofstream& output) {
