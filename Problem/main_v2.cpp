@@ -96,8 +96,15 @@ void process_projects(map<string, unordered_map<string, int>>& contributors, map
     //TODO on contr_skill_levelup: update contributors and skills_available(-> if vector of names empty then erase the level key/index AND if level-map empty then erase the skill key/index)
     vector<tuple<string, vector<string>, int>> projects_wip;   // "name", {"contr_names"...}, ready_on_day
     int day = 0;
+    bool project_has_finished = false;
+    bool project_has_started = false;
+    bool project_has_started_yesterday = false;
 
     do {
+        if(day%500==0){cout << day << "\n";}
+        project_has_finished = false;
+        project_has_started = false;
+
         // check if projects finish today
         for(vector<tuple<string, vector<string>, int>>::iterator it = projects_wip.begin(); it != projects_wip.end();) {
             if(get<2>(*it)==day) {
@@ -111,10 +118,16 @@ void process_projects(map<string, unordered_map<string, int>>& contributors, map
                         cout << "ERROR: contributor not found." << "\n";
                     }
                 }
+                project_has_finished = true;
                 it = projects_wip.erase(it);
             } else {
                 ++it;
             }
+        }
+
+        if(!(project_has_finished || project_has_started_yesterday) && day!=0) {
+            ++day;
+            continue;
         }
 
         // try to assign contributors to projects
@@ -161,10 +174,17 @@ void process_projects(map<string, unordered_map<string, int>>& contributors, map
                 contributors_availability = contributors_availability_tmp;
                 // update solution
                 solution.push_back(make_pair(it->second, chosen_contr));
+                project_has_started = true;
                 // move project to projects_wip
                 projects_wip.push_back(make_tuple(it->second, chosen_contr, day + projects.at(it->second).days));
                 it = projects_todo.erase(it);
             }            
+        }
+
+        if(project_has_started) {
+            project_has_started_yesterday = true;
+        } else {
+            project_has_started_yesterday = false;
         }
 
         ++day;
