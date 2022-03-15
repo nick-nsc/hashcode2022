@@ -4,6 +4,7 @@
 #include <array>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <algorithm>
 
@@ -94,13 +95,16 @@ void process_projects(map<string, unordered_map<string, int>>& contributors, map
     }
     
     //TODO on contr_skill_levelup: update skills_available(-> if vector of names empty then erase the level key/index AND if level-map empty then erase the skill key/index)
+    //TODO rebalance projects_todo in intervalls: if no more than a score of 0 is possible at that point -> remove project from projects_todo
     vector<tuple<string, vector<string>, int>> projects_wip;   // "name", {"contr_names"...}, ready_on_day
     int day = 0;
     bool project_has_finished = false;
+    unordered_set<string> new_free_skills;
 
     do {
         if(day%500==0){cout << day << "\n";}
         project_has_finished = false;
+        new_free_skills.clear();
 
         // check if projects finish today
         for(vector<tuple<string, vector<string>, int>>::iterator it = projects_wip.begin(); it != projects_wip.end();) {
@@ -109,6 +113,10 @@ void process_projects(map<string, unordered_map<string, int>>& contributors, map
                 vector<string> contr_to_release = get<1>(*it);
                 for(auto& c : contr_to_release) {
                     contributors_availability.at(c) = true;
+                    // save what skills have been freed
+                    for(auto& s : contributors.at(c)) {
+                        new_free_skills.insert(s.first);
+                    }
                 }
                 project_has_finished = true;
                 it = projects_wip.erase(it);
@@ -126,6 +134,21 @@ void process_projects(map<string, unordered_map<string, int>>& contributors, map
         for(vector<pair<int, string>>::iterator it = projects_todo.begin(); it != projects_todo.end();) {
             // get the project's roles
             auto& required_roles = projects.at(it->second).roles;
+
+            // after a project has finished: check the project's skills against the newly available skills
+            bool need_to_assign = false;
+            if(project_has_finished) {
+                for(auto& r : required_roles) {
+                    if(new_free_skills.count(r.first)==1) {
+                        need_to_assign = true;
+                        break;
+                    }
+                }
+                if(!need_to_assign) {
+                    ++it;
+                    continue;
+                }
+            }
 
             // for each role: check if an available contributor can be assigned
             bool could_not_assign;
